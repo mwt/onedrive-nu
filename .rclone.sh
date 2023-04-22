@@ -16,20 +16,28 @@ echo ">>>> Syncing OneDrive at $(date +'[%D %T]') <<<<"
 cd "$SYNC_DIR"
 
 # tell rclone to return error number 9 when nothing is copied
-rclone sync --stats 0 --log-file="./.tmp" --log-level INFO --use-json-log --error-on-no-transfer "$REMOTE_DIR" "./" --exclude-from ".rcloneignore"
+rclone sync --stats 0 --log-file="./.tmp.json" --log-level INFO --use-json-log --error-on-no-transfer "$REMOTE_DIR" "./" --exclude-from ".rcloneignore"
 RET_VAL=$?
 
 if [ $RET_VAL -eq 9 ]; then
     echo "nothing changed"
 elif [ $RET_VAL -eq 0 ]; then
+    # Send a message to my XMPP account
     echo "$MY_XMPP $(date +'[%D %T]') files changed!" | smplxmpp
-    MODIFIED_FILES="$(jq -sr '[.[] | select(.object != null) | .msg + ": " + .object ] | join("\\\\n")' "./.tmp")"
-    echo "$MY_XMPP $MODIFIED_FILES" | smplxmpp
+
+    # Add username to the begining of a new tmp file (-n means no newline at end of echo)
+    echo -n "$MY_XMPP " > "./.tmp"
+    # Get the updated files from log file and add them to the tmp file
+    jq -sr '[.[] | select(.object != null) | .msg + ": " + .object ] | join("\\n")' "./.tmp.json" >> "./.tmp"
+    # Tell smplxmpp to read the tmp file and send the message
+    cat "./.tmp" | smplxmpp
+    # Delete the tmp file
+    rm "./.tmp"
 else
     echo "$MY_XMPP $(date +'[%D %T]') Error! rclone exited with code $RET_VAL" | smplxmpp
     # move the log file to a new file with the error code and timestamp
-    cp "./.tmp" "./.error-$RET_VAL-$(date +'[%D %T]').log"
+    cp "./.tmp.json" "./.error-$RET_VAL-$(date +'[%D %T]').json"
 fi
 
 # Delete the log file
-rm "./.tmp"
+rm "./.tmp.json"

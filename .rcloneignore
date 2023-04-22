@@ -1,6 +1,7 @@
 ## This file is used to ignore files and folders when using rclone.
 
 README.md
+in process/**
 
 # Ignore hidden files and folders
 .*
