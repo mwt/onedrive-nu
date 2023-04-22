@@ -1,0 +1,9 @@
+# ignore everything by default
+*
+
+# track this file
+!.gitignore
+
+# track rclone files
+!.rclone.sh
+!.rcloneignore
