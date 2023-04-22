@@ -7,3 +7,6 @@
 # track rclone files
 !.rclone.sh
 !.rcloneignore
+
+# track other relevant files
+!README.md
