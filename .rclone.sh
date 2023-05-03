@@ -6,6 +6,7 @@
 ##################
 REMOTE_DIR="onedrive-nu:/Referees-Matthew"
 MY_XMPP="matthew@xmpp.mwt.me"
+SMPLXMPP_PATH="$HOME/.local/bin/smplxmpp"
 SYNC_DIR=$(dirname -- $0)
 ##################
 
@@ -23,18 +24,11 @@ if [ $RET_VAL -eq 9 ]; then
     echo "nothing changed"
 elif [ $RET_VAL -eq 0 ]; then
     # Send a message to my XMPP account
-    echo "$MY_XMPP $(date +'[%D %T]') files changed!" | smplxmpp
-
-    # Add username to the begining of a new tmp file (-n means no newline at end of echo)
-    echo -n "$MY_XMPP " > "./.tmp"
-    # Get the updated files from log file and add them to the tmp file
-    jq -sr '[.[] | select(.object != null) | .msg + ": " + .object ] | join("\\n")' "./.tmp.json" >> "./.tmp"
-    # Tell smplxmpp to read the tmp file and send the message
-    cat "./.tmp" | smplxmpp
-    # Delete the tmp file
-    rm "./.tmp"
+    echo "$MY_XMPP $(date +'[%D %T]') files changed!" | "$SMPLXMPP_PATH"
+    # Get the updated files from log file, escape newlines, and send the message
+    jq -sr '[.[] | select(.object != null) | .msg + ": " + .object ] | join("\n")' "./.tmp.json" | "$SMPLXMPP_PATH-nl" | "$SMPLXMPP_PATH" --focus "$MY_XMPP"
 else
-    echo "$MY_XMPP $(date +'[%D %T]') Error! rclone exited with code $RET_VAL" | smplxmpp
+    echo "$MY_XMPP $(date +'[%D %T]') Error! rclone exited with code $RET_VAL" | "$SMPLXMPP_PATH"
     # move the log file to a new file with the error code and timestamp
     cp "./.tmp.json" "./.error-$RET_VAL-$(date +'[%D %T]').json"
 fi
